@@ -1,0 +1,10 @@
+[package]
+name = "bevy_physics_engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossbeam = "0.8.4"
+bevy = "0.15.0"
+parry3d = "0.17.4"
+nalgebra = "0.33.2"
