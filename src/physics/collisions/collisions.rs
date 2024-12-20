@@ -67,8 +67,8 @@ pub fn narrow_phase(
 
     let mut combinations = query.iter_combinations_mut();
     while let Some([
-        (mut transform_1, chunk_1, collider_1, rigid_body_1, mut velocity_1, mass_1),
-        (mut transform_2, chunk_2, collider_2, rigid_body_2, mut velocity_2, mass_2)
+        (mut transform_1, chunk_1, collider_1, rigid_body_1, velocity_1, mass_1),
+        (mut transform_2, chunk_2, collider_2, rigid_body_2, velocity_2, mass_2)
     ]) = combinations.fetch_next() {
 
         if chunk_1.0 == chunk_2.0 {
@@ -196,7 +196,7 @@ fn contact_handling(
 }
 
 
-const RESTITUTION: f32 = 0.8;
+const RESTITUTION: f32 = 0.4;
 
 /// separates the objects 
 fn separate_objects(
@@ -238,7 +238,7 @@ fn separate_objects(
         velocity.0 -= impulse * normal_vec;
     }
 
-    println!("velocity: {}", velocity.0);
+    // println!("velocity: {}", velocity.0);
 }
 
 
@@ -283,6 +283,6 @@ fn separate_dynamic(
     velocity_1.0 -= (impulse / mass_1) * normal_vec;
     velocity_2.0 += (impulse / mass_2) * normal_vec;
 
-    println!("velocity 1: {}", velocity_1.0);
-    println!("velocity 2: {}", velocity_2.0);
+    // println!("velocity 1: {}", velocity_1.0);
+    // println!("velocity 2: {}", velocity_2.0);
 }

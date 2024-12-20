@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use collisions::collider::Collider;
+use collisions::collider::{Collider, MeshCollider};
 use nalgebra::Vector3;
 
 use crate::physics::*;
@@ -11,7 +11,8 @@ impl Plugin for LevelPlugin {
         app
             .add_systems(Startup, (
                 spawn_ground,
-                spawn_cubes
+                spawn_cubes,
+                spawn_concave_obj
             ));
     }
 }
@@ -32,11 +33,13 @@ fn spawn_ground(
         shape: shape_box,
     };
 
+    let transform = Transform::from_xyz(0., 0., 0.);
+    
     // spawn the test platform
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(10., 1., 10.))),
         MeshMaterial3d(materials.add(Color::linear_rgb(1.65, 1.92, 1.98))),
-        Transform::from_xyz(0., 0., 0.),
+        transform,
         RigidBody::Static,
         collider
     ));
@@ -63,7 +66,7 @@ fn spawn_cubes(
         Transform::from_xyz(-1.5, 7., 0.),
         RigidBody::Dynamic,
         Velocity(Vec3::ZERO),
-        Mass(4.),
+        Mass(1.),
         collider_1
     ));
 
@@ -80,9 +83,38 @@ fn spawn_cubes(
         MeshMaterial3d(materials.add(Color::linear_rgb(1., 1., 0.))),
         Transform::from_xyz(1.5, 7., 0.),
         RigidBody::Dynamic,
-        Velocity(Vec3::new(-1., 0., 0.)),
+        Velocity(Vec3::ZERO),
         Mass(3.),
         collider_2
     ));
 
+}
+
+fn spawn_concave_obj(
+    assets: Res<AssetServer>,
+    mut commands: Commands,
+) {
+
+    let collider_shape = assets.load("./concave.glb#Mesh0/Primitive0"); 
+
+    let mesh_collider = MeshCollider(collider_shape);
+
+    let scene = SceneRoot(assets.load(
+        GltfAssetLabel::Scene(0).from_asset("./concave.glb")
+    ));
+
+    commands.spawn((
+        scene,
+        mesh_collider,
+        Transform::from_xyz(0., 7., 0.),
+        Velocity(Vec3::ZERO),
+        Mass(1.),
+        RigidBody::Dynamic
+
+    ));
+        
+
+    
+
+    
 }

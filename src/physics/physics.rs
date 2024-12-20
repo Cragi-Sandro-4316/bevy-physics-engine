@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use collisions::{broad_phase, narrow_phase};
+use collisions::{broad_phase, collider::ColliderPlugin, narrow_phase};
 
 #[path = "./collisions/collisions.rs"]
 pub mod collisions;
@@ -10,6 +10,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(Time::<Fixed>::from_hz(60.))
+            .add_plugins(ColliderPlugin)
             .add_systems(FixedUpdate, (
                 apply_gravity,
                 apply_velocity,
