@@ -1,5 +1,5 @@
 use nalgebra::{Isometry, Isometry3, Point3, Quaternion, Unit};
-use parry3d::{bounding_volume::Aabb, shape::SharedShape};
+use parry3d::bounding_volume::Aabb;
 use bevy::{prelude::*, render::mesh::{Indices, VertexAttributeValues}};
 
 
@@ -73,7 +73,7 @@ pub fn subdivide_aabb(
 
 
 // converts a bevy transform into a parry Isometry for collision detection
-pub fn transform_to_isometry(transform: &Transform) -> Isometry<f32, Unit<Quaternion<f32>>, 3> {
+pub fn transform_to_isometry(transform: Transform) -> Isometry<f32, Unit<Quaternion<f32>>, 3> {
     let mut isometry3d = Isometry3::translation(
         transform.translation.x, 
         transform.translation.y, 
