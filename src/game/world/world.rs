@@ -38,7 +38,6 @@ fn spawn_ground(
         MeshMaterial3d(materials.add(Color::linear_rgb(1.65, 1.92, 1.98))),
         Transform::from_xyz(0., 0., 0.),
         RigidBody::Static,
-        Velocity(Vec3::ZERO),
         collider
     ));
 }
@@ -64,8 +63,26 @@ fn spawn_cubes(
         Transform::from_xyz(-1.5, 7., 0.),
         RigidBody::Dynamic,
         Velocity(Vec3::ZERO),
-        Mass(3.),
+        Mass(4.),
         collider_1
+    ));
+
+    let shape_box_2 = Box::new(
+        parry3d::shape::Cuboid::new(Vector3::new(0.5, 0.5, 0.5))
+    );
+
+    let collider_2 = Collider {
+        shape: shape_box_2,
+    };
+
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(1., 1., 1.))),
+        MeshMaterial3d(materials.add(Color::linear_rgb(1., 1., 0.))),
+        Transform::from_xyz(1.5, 7., 0.),
+        RigidBody::Dynamic,
+        Velocity(Vec3::new(-1., 0., 0.)),
+        Mass(3.),
+        collider_2
     ));
 
 }
