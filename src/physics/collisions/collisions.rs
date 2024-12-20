@@ -110,7 +110,6 @@ fn collision_check(
         match contact {
             Some(contact) => {
 
-                println!("contact");
                 contact_handling(
                     contact, 
                     &rigid_body_1, 
@@ -122,9 +121,7 @@ fn collision_check(
                 );
 
             },
-            None => {
-                println!("no");
-            }
+            None => {}
         }
     }
 }
@@ -168,7 +165,6 @@ fn separate_objects(
 ) {
     if contact.dist > TOLERANCE {return}
 
-    println!("contact dist {}", contact.dist);
 
     let normal = {
         if entity == 1 {

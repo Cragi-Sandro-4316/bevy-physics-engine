@@ -31,5 +31,4 @@ fn spawn_camera(mut commands: Commands) {
         Transform::from_xyz(0., 3., -30.).looking_at(Vec3::splat(0.), Vec3::Y)
     ));
 
-    println!("camera");
 }
