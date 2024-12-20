@@ -5,13 +5,12 @@ use super::extract_mesh_vertices_indices;
 
 #[derive(Component)]
 pub struct Collider {
-    shape: Box<dyn Shape>,
-    chunk: u16
+    pub shape: Box<dyn Shape>,
 }
 
 
 impl Collider {
-    pub fn from_mesh(
+    pub fn _from_mesh(
         &mut self,
         mesh_handle: Handle<Mesh>,
         mesh_server: Res<Assets<Mesh>>
