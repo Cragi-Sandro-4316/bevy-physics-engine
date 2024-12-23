@@ -51,9 +51,8 @@ fn assign_mesh_collider(
                 shape: compound_collider
             });
 
-        }
 
-        
+        }
 
     }
 

@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+use std::rc::Rc;
+
 use super::{Mass, RigidBody, Velocity};
 
 use bevy::prelude::*;
 
 use nalgebra::{Isometry3, Point3};
-use parry3d::bounding_volume::Aabb;
+use parry3d::bounding_volume::{Aabb, BoundingVolume};
 use parry3d::query::Contact;
 use parry3d::query;
 
@@ -20,8 +23,8 @@ use collider::*;
 mod octree;
 use octree::*;
 
-const MAX_ENTITIES: usize = 16; 
-const MAX_DEPTH: usize = 4;
+const MAX_ENTITIES: usize = 50; 
+const MAX_DEPTH: usize = 5;
 
 pub const TOLERANCE: f32 = 0.0;
 
@@ -30,7 +33,9 @@ pub const TOLERANCE: f32 = 0.0;
 /// spawns an entity containing the Broad Collison Groups
 pub fn broad_phase(
     entity_query: Query<(Entity, &Collider, &Transform)>,
-    mut commands: Commands
+    mut chunk_query: Query<&mut Chunk>,
+    mut commands: Commands,
+
 ) {
     // initialize the octree
     let world_bounds = Aabb::new(
@@ -40,21 +45,32 @@ pub fn broad_phase(
 
     let mut octree = OctreeNode::new(world_bounds);
 
+    unsafe {CHUNK_NUMBER = 0}
+
     for (entity, collider, transform) in entity_query.iter() {
-        let physics_entity = PhysicsEntity {
+        
+        
+        
+        let physics_entity = Rc::new(PhysicsEntity {
             entity: entity,
             collider: collider.shape.clone_dyn(),
             transform: *transform,
-        };
+        });
 
-        octree.insert(physics_entity, MAX_ENTITIES, MAX_DEPTH, &mut commands);
-        
+
+        if let Ok(mut chunks) = chunk_query.get_mut(entity) {
+            chunks.0 = Vec::new();
+        }
+        octree.insert(physics_entity, MAX_ENTITIES, MAX_DEPTH, &mut chunk_query, &mut commands);    
     }
 
 }
 
+
+
 /// handles the narrow phase collision detection
 pub fn narrow_phase(
+
     mut query: Query<(
         &mut Transform, 
         &Chunk, 
@@ -65,35 +81,63 @@ pub fn narrow_phase(
     )>
 ) {
 
+    // iterates all entities
     let mut combinations = query.iter_combinations_mut();
     while let Some([
-        (mut transform_1, chunk_1, collider_1, rigid_body_1, velocity_1, mass_1),
-        (mut transform_2, chunk_2, collider_2, rigid_body_2, velocity_2, mass_2)
+        (mut transform_1, chunk_1, collider_1, rigid_body_1, mut velocity_1, mass_1),
+        (mut transform_2, chunk_2, collider_2, rigid_body_2, mut velocity_2, mass_2)
     ]) = combinations.fetch_next() {
 
-        if chunk_1.0 == chunk_2.0 {
+
+        let set: HashSet<_> = chunk_1.0.iter().collect();
+        
+        // if 2 entities are in the same chunk check for collisions
+        if chunk_2.0.iter().any(|item| set.contains(item)) {
+
             let isometry_1 = transform_to_isometry(*transform_1);
             let isometry_2 = transform_to_isometry(*transform_2);
 
-            collision_check(
-                isometry_1, 
-                collider_1, 
-                rigid_body_1, 
-                &mut transform_1, 
-                velocity_1,
-                mass_1,
+            
+            let aabb_1 = collider_1.shape.compute_aabb(&isometry_1);
+            let aabb_2 = collider_2.shape.compute_aabb(&isometry_2);
 
-                isometry_2, 
-                collider_2, 
-                rigid_body_2, 
-                &mut transform_2,
-                velocity_2,
-                mass_2
-            );
+            // if the objects' aabbs intersect, they are close, so check for collisions
+            if aabb_1.intersects(&aabb_2) {
+
+                if let Some(contact) = query::intersection_test(
+                    &isometry_1, 
+                    &*collider_1.shape, 
+                    &isometry_2, 
+                    &*collider_2.shape, 
+                ).ok() {
+                    if contact {
+                        collision_check(
+                            isometry_1, 
+                            collider_1, 
+                            rigid_body_1, 
+                            &mut transform_1, 
+                            &mut velocity_1,
+                            mass_1,
+            
+                            isometry_2, 
+                            collider_2, 
+                            rigid_body_2, 
+                            &mut transform_2,
+                            &mut velocity_2,
+                            mass_2
+                        );
+                    }
+                }
+            }
+
             
         }
+
+        
     }
 }
+
+
 
 
 fn collision_check(
@@ -101,14 +145,14 @@ fn collision_check(
     collider_1: &Collider,
     rigid_body_1: &RigidBody,
     transform_1: &mut Transform,
-    velocity_1: Option<Mut<'_, Velocity>>,
+    velocity_1: &mut Option<Mut<'_, Velocity>>,
     mass_1: Option<&Mass>,
 
     isometry_2: Isometry3<f32>,
     collider_2: &Collider,
     rigid_body_2: &RigidBody,
     transform_2: &mut Transform,
-    velocity_2: Option<Mut<'_, Velocity>>,
+    velocity_2: &mut Option<Mut<'_, Velocity>>,
     mass_2: Option<&Mass>,
 
 ) {
@@ -121,6 +165,7 @@ fn collision_check(
     ).ok() {
         match contact {
             Some(contact) => {
+
 
                 contact_handling(
                     contact, 
@@ -146,37 +191,32 @@ fn collision_check(
 /// Returns the separated transforms of the entities
 fn contact_handling(
     contact: Contact,
-    
+
     rigid_body_1: &RigidBody,
     transform_1: &mut Transform,
-    velocity_1: Option<Mut<'_, Velocity>>,
+    velocity_1: &mut Option<Mut<'_, Velocity>>,
     mass_1: Option<&Mass>,
 
 
     rigid_body_2: &RigidBody,
     transform_2: &mut Transform,
-    velocity_2: Option<Mut<'_, Velocity>>,
+    velocity_2: &mut Option<Mut<'_, Velocity>>,
     mass_2: Option<&Mass>,
 )  {
 
     match (rigid_body_1, rigid_body_2) {
         (RigidBody::Static, RigidBody::Static) => {},
         (RigidBody::Static, RigidBody::Dynamic) => {
-            if let Some(mut velocity) = velocity_2 {
-                separate_objects(transform_2, &mut velocity, contact, 2);
-            }
-
+            
+            separate_objects(transform_2, &mut velocity_2.as_mut().unwrap(), contact, 2);
         },
         (RigidBody::Dynamic, RigidBody::Static) => {
-            if let Some(mut velocity) = velocity_1 {
-                separate_objects(transform_1, &mut velocity, contact, 1);
-            }
+            
+            separate_objects(transform_1, &mut velocity_1.as_mut().unwrap(), contact, 1);
         },
         (RigidBody::Dynamic, RigidBody::Dynamic) => {
-            // todo!()
-
-            let mut velocity_1 = velocity_1.unwrap();
-            let mut velocity_2 = velocity_2.unwrap();
+            let mut velocity_1 = velocity_1.as_mut().unwrap();
+            let mut velocity_2 = velocity_2.as_mut().unwrap();
 
             let mass_1 = mass_1.unwrap();
             let mass_2 = mass_2.unwrap();
@@ -196,7 +236,7 @@ fn contact_handling(
 }
 
 
-const RESTITUTION: f32 = 0.4;
+const RESTITUTION: f32 = 0.3;
 
 /// separates the objects 
 fn separate_objects(
@@ -238,7 +278,6 @@ fn separate_objects(
         velocity.0 -= impulse * normal_vec;
     }
 
-    // println!("velocity: {}", velocity.0);
 }
 
 
@@ -283,6 +322,4 @@ fn separate_dynamic(
     velocity_1.0 -= (impulse / mass_1) * normal_vec;
     velocity_2.0 += (impulse / mass_2) * normal_vec;
 
-    // println!("velocity 1: {}", velocity_1.0);
-    // println!("velocity 2: {}", velocity_2.0);
 }

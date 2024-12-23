@@ -22,7 +22,7 @@ fn spawn_camera(mut commands: Commands) {
             shadow_depth_bias: 100.,
             ..default()
         },
-        Transform::from_xyz(0., 3., -1.)
+        Transform::from_xyz(0., 10., -1.)
 
     ));
 

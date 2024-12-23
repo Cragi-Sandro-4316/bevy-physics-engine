@@ -861,6 +861,7 @@ dependencies = [
  "crossbeam",
  "nalgebra",
  "parry3d",
+ "rand",
 ]
 
 [[package]]
