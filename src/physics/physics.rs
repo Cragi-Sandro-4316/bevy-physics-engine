@@ -1,20 +1,24 @@
+
 use bevy::prelude::*;
-use collisions::{broad_phase, narrow_phase};
+use collisions::{broad_phase, collider::ColliderPlugin, narrow_phase};
 
 #[path = "./collisions/collisions.rs"]
 pub mod collisions;
 
 pub struct PhysicsPlugin;
 
+const UPDATE_FREQUENCY: f32 = 30.;
+
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(Time::<Fixed>::from_hz(60.))
+            .insert_resource(Time::<Fixed>::from_hz(UPDATE_FREQUENCY.into()))
+            .add_plugins(ColliderPlugin)
             .add_systems(FixedUpdate, (
                 apply_gravity,
                 apply_velocity,
                 broad_phase,
-                narrow_phase
+                narrow_phase,
             ).chain());
     }
 }
@@ -26,7 +30,7 @@ pub enum RigidBody {
     Dynamic
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct Velocity(pub Vec3);
 
 #[derive(Component)]
@@ -34,7 +38,7 @@ pub struct Mass(pub f32);
 
 pub const GRAVITY: f32 = 9.8;
 
-pub const DELTA: f32 = 1. / 60.;
+pub const DELTA: f32 = 1. / UPDATE_FREQUENCY;
 
 pub const TERMINAL_VELOCITY: f32 = 100.;
 

@@ -32,12 +32,12 @@ fn main() {
 fn show_fps (
     diagnostics: Res<DiagnosticsStore>,
 ) {
-    if let Some(_value) = diagnostics
+    if let Some(value) = diagnostics
     .get(&FrameTimeDiagnosticsPlugin::FPS)
     .and_then(|fps| fps.smoothed()){ 
-        // println!("{}", value);    
+        println!("{}", value);    
     }
     else {
-        // println!("no");
+        println!("no");
     }
 }

@@ -22,14 +22,13 @@ fn spawn_camera(mut commands: Commands) {
             shadow_depth_bias: 100.,
             ..default()
         },
-        Transform::from_xyz(0., 3., -1.)
+        Transform::from_xyz(0., 10., -1.)
 
     ));
 
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0., 3., -30.).looking_at(Vec3::splat(0.), Vec3::Y)
+        Transform::from_xyz(0., 3., -20.).looking_at(Vec3::splat(0.), Vec3::Y)
     ));
 
-    println!("camera");
 }
